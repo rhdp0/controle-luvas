@@ -94,11 +94,11 @@ def criar_graficos(df: pd.DataFrame) -> dict:
     uso_por_tipo = df.groupby(["Data", "Tamanhos/tipo luvas"], as_index=False)["Total Usado no Dia"].sum()
     saldo_diario = df.groupby("Data", as_index=False)["Saldo Final"].mean()
 
-    grafico_serie = px.line(
+    grafico_serie = px.bar(
         serie_diaria,
         x="Data",
         y="Total Usado no Dia",
-        markers=True,
+        text_auto=True,
         title="Consumo diário de luvas",
     )
 
@@ -119,11 +119,11 @@ def criar_graficos(df: pd.DataFrame) -> dict:
         title="Distribuição do uso por tamanho/tipo",
     )
 
-    grafico_saldo = px.line(
+    grafico_saldo = px.bar(
         saldo_diario,
         x="Data",
         y="Saldo Final",
-        markers=True,
+        text_auto=True,
         title="Saldo final diário",
     )
 
@@ -145,10 +145,11 @@ def figuras_pdf(df: pd.DataFrame) -> list[tuple[str, BytesIO]]:
 
     serie_diaria = df.groupby("Data", as_index=False)["Total Usado no Dia"].sum()
     fig1, ax1 = plt.subplots(figsize=(6, 3.5))
-    ax1.plot(serie_diaria["Data"], serie_diaria["Total Usado no Dia"], marker="o")
+    ax1.bar(serie_diaria["Data"], serie_diaria["Total Usado no Dia"], color="#4C6EF5")
     ax1.set_title("Consumo diário")
     ax1.set_ylabel("Total de luvas")
-    ax1.grid(True, alpha=0.3)
+    ax1.tick_params(axis="x", rotation=45, ha="right")
+    ax1.grid(True, axis="y", alpha=0.3)
     buf1 = BytesIO()
     fig1.savefig(buf1, format="png", dpi=300, bbox_inches="tight")
     plt.close(fig1)
@@ -169,10 +170,11 @@ def figuras_pdf(df: pd.DataFrame) -> list[tuple[str, BytesIO]]:
 
     saldo_diario = df.groupby("Data", as_index=False)["Saldo Final"].mean()
     fig3, ax3 = plt.subplots(figsize=(6, 3.5))
-    ax3.plot(saldo_diario["Data"], saldo_diario["Saldo Final"], marker="o", color="#12B886")
+    ax3.bar(saldo_diario["Data"], saldo_diario["Saldo Final"], color="#12B886")
     ax3.set_title("Evolução do saldo final")
     ax3.set_ylabel("Saldo final")
-    ax3.grid(True, alpha=0.3)
+    ax3.tick_params(axis="x", rotation=45, ha="right")
+    ax3.grid(True, axis="y", alpha=0.3)
     buf3 = BytesIO()
     fig3.savefig(buf3, format="png", dpi=300, bbox_inches="tight")
     plt.close(fig3)
