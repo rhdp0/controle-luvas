@@ -1,4 +1,5 @@
 import json
+import math
 from collections import Counter
 from datetime import date
 from io import BytesIO
@@ -185,6 +186,23 @@ def figuras_pdf(df: pd.DataFrame) -> list[tuple[str, BytesIO]]:
 
 
 def gerar_pdf(df: pd.DataFrame, kpis: dict) -> BytesIO:
+    def sanitize_value(value, use_dash: bool = False):
+        if pd.notna(value) and isinstance(value, (int, float)) and math.isfinite(value):
+            return value
+        return "-" if use_dash else 0
+
+    def format_metric(value, fmt: str, use_dash: bool = False):
+        sanitized = sanitize_value(value, use_dash)
+        if isinstance(sanitized, str):
+            return sanitized
+        return fmt.format(sanitized)
+
+    total_usado = format_metric(kpis.get("total_usado"), "{:.0f}")
+    media_diaria = format_metric(kpis.get("media_diaria"), "{:.1f}")
+    extras_total = format_metric(kpis.get("extras_total"), "{:.0f}")
+    aproveitamento_extras = format_metric(kpis.get("aproveitamento_extras"), "{:.1f}")
+    saldo_atual = format_metric(kpis.get("saldo_atual"), "{:.0f}", use_dash=True)
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
@@ -197,10 +215,10 @@ def gerar_pdf(df: pd.DataFrame, kpis: dict) -> BytesIO:
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 8, "Indicadores-chave", ln=True)
     pdf.set_font("Arial", size=11)
-    pdf.multi_cell(0, 7, f"Total usado: {kpis['total_usado']:.0f} luvas")
-    pdf.multi_cell(0, 7, f"Média diária: {kpis['media_diaria']:.1f} luvas/dia")
-    pdf.multi_cell(0, 7, f"Extras utilizados: {kpis['extras_total']:.0f} ({kpis['aproveitamento_extras']:.1f}% do total)")
-    pdf.multi_cell(0, 7, f"Saldo final mais recente: {kpis['saldo_atual']:.0f} luvas")
+    pdf.multi_cell(0, 7, f"Total usado: {total_usado} luvas")
+    pdf.multi_cell(0, 7, f"Média diária: {media_diaria} luvas/dia")
+    pdf.multi_cell(0, 7, f"Extras utilizados: {extras_total} ({aproveitamento_extras}% do total)")
+    pdf.multi_cell(0, 7, f"Saldo final mais recente: {saldo_atual} luvas")
 
     for titulo, buffer_imagem in figuras_pdf(df):
         pdf.add_page()
@@ -300,14 +318,17 @@ def main():
     layout_dashboard(df_filtrado, charts, kpis)
 
     if gerar_relatorio:
-        pdf_buffer = gerar_pdf(df_filtrado, kpis)
-        st.sidebar.download_button(
-            label="Baixar relatório",
-            data=pdf_buffer,
-            file_name="relatorio_luvas.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
+        if df_filtrado.empty:
+            st.sidebar.warning("Não há dados para gerar o relatório com os filtros atuais.")
+        else:
+            pdf_buffer = gerar_pdf(df_filtrado, kpis)
+            st.sidebar.download_button(
+                label="Baixar relatório",
+                data=pdf_buffer,
+                file_name="relatorio_luvas.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
 
 
 if __name__ == "__main__":
