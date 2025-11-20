@@ -224,7 +224,9 @@ def gerar_pdf(df: pd.DataFrame, kpis: dict) -> BytesIO:
         pdf.add_page()
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, titulo, ln=True)
-        pdf.image(buffer_imagem, x=10, w=190, type="png")
+        available_width = pdf.w - pdf.l_margin - pdf.r_margin
+        image_width = min(available_width, 180)
+        pdf.image(buffer_imagem, x=pdf.l_margin, w=image_width, type="png")
 
     output = BytesIO()
     pdf.output(output)
